@@ -1,0 +1,138 @@
+<html>
+<head>
+  <title>ZIIBRA</title>
+</head>
+<body>
+  <div id="container">
+  <h1>Email Parser</h1>
+  <form>
+    <textarea rows="6" cols="50" placeholder="Paste email addresses here..." id="input"></textarea>
+    <br/>
+    <input type="button" onclick="addEmails(input.value)" value="Submit"></input>
+  </form>
+  <div id="list"></div>
+  </div>
+
+  <script type="text/javascript">
+    // parse inputs and append contact info
+    function addEmails(input) {
+      var content = sanitizeInput(input.split(/(?:,| |\n)+/));
+      var textarea = document.getElementById('input');
+      var approved = false;
+
+      // make sure at least one email exists
+      for (var i=0; i<content.length; i++) {
+        if (isValidEmail(content[i])) approved = true;
+      }
+
+      // format and append contacts
+      if (approved) {
+        var validInfo = validateEmails(content);
+        var pairs = buildTupples(validInfo);
+
+        pairs.forEach(appendContact);
+      } else {
+        alert('No email addresses found');
+      }
+      
+      textarea.value = '';
+    }
+
+    // remove quotes and < > from inputs
+    function sanitizeInput(array) {
+      var result = [];
+
+      array.forEach(function(string) {
+        result.push(string.replace(/[“”"'<>]/g, ''));
+      });
+
+      return result;
+    }
+
+    function validateEmails(array) {
+      var invalid = [];
+      var valid = [];
+
+      // find invalid emails
+      array.forEach(function(string) {
+        if (string.indexOf('@') > 0 || string.indexOf('.') > 0) {
+          if (isValidEmail(string)) {
+            valid.push(string);
+          } else {
+            invalid.push(string);  
+
+            // remove associated name(s)
+            while (!isValidEmail(valid[valid.length-1])) {
+              valid.pop();
+            }
+          }
+        } else {
+          valid.push(string);
+        }
+      });
+
+      // handle trailing names
+      while (!isValidEmail(valid[valid.length-1]) && valid.length > 0) {
+        valid.pop();
+      }
+
+      // alert invalid emails
+      if (invalid.length > 0) {
+        console.log('invalid emails:', invalid);
+        alert('Error! These email addresses are invalid:\n' + invalid.join(',\n'));
+      }
+
+      return valid;
+    }
+
+    // concatenate name(s) and pair with email
+    function buildTupples(array) {
+      var tupples = [];
+      var currentName = [];
+
+      while (array.length > 0) {
+        var temp = array.shift();
+
+        if (!isValidEmail(temp)) {
+          currentName.push(temp);
+        } else if (isValidEmail(temp)) {
+          if (currentName.length === 0) {
+            tupples.push([temp]);
+          } else {
+            tupples.push([temp, currentName.join(' ')]);
+          }
+          currentName = [];
+        }
+      }
+
+      return tupples;
+    }
+
+    // template for each item
+    function buildContact(pair) {
+      pair[1] = pair[1] || pair[0];
+      var item = pair[1] + ' <' + pair[0] + '>';
+
+      return item;
+    }
+
+    // append contacts to the DOM
+    function appendContact(tupple) {
+      var contact = document.createElement("p");
+      var text = buildContact(tupple);
+      var content = document.createTextNode(text);
+
+      contact.appendChild(content);
+      document.getElementById("list").appendChild(contact);
+    }
+
+    // simple test for email structure
+    function isValidEmail(email) {
+      var regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      return regex.test(email);
+    }
+  </script>
+
+</body>
+</html>
